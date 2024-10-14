@@ -12,5 +12,5 @@ export async function parseFssp() {
   const outputFilePath = `${__dirname}/outputFile/list.xlsx`;
   const entries = await parseExcel(inputFile);
 
-  await saveExcel(await getFsspAndFilterClients(entries, 2,305), outputFilePath);
+  await saveExcel(await getFsspAndFilterClients(entries), outputFilePath);
 }

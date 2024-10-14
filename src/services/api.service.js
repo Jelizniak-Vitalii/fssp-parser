@@ -10,6 +10,6 @@ export async function getFssp(name, birthDate) {
       firstName: name.split(' ')[1],
       lastName: name.split(' ')[0],
       patronymic: name.split(' ')[2]
-    },
+    }
   });
 }
