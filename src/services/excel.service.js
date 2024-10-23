@@ -1,4 +1,5 @@
 import XLSX from 'xlsx';
+import { logger } from './logger.service.js';
 
 export async function parseExcel(pathToFile) {
   const workbook = XLSX.readFile(pathToFile);
@@ -15,6 +16,6 @@ export async function saveExcel(data, pathToFile) {
     XLSX.utils.book_append_sheet(newWorkbook, worksheet, 'clients');
     XLSX.writeFile(newWorkbook, pathToFile);
   } catch (error) {
-    console.error('Ошибка при сохранении файла:', error.message);
+    logger.error(`Ошибка при сохранении файла: ${error.message}`);
   }
 }

@@ -1,8 +1,8 @@
 /node_modules
 /.idea
-/src/inputFile/*
-/src/outputFile/*
+/assets/inputFile/*
+/assets/outputFile/*
+/logs/*
 .vscode/*
 .env
 .env.*
-fssp-data.json

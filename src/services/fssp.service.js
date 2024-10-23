@@ -1,80 +1,79 @@
 import * as fs from 'node:fs';
+import path from 'path';
 
 import { formatDate } from '../utils/format-date.utils.js';
-import { getFssp } from './api.service.js';
+import { Client } from '../client/client.js';
+import { checkFsspError } from '../utils/errors.utils.js';
+import { getFssp } from './api/api.service.js';
+import { logger } from './logger.service.js';
 
 async function saveDataToFile(fileName, data) {
   try {
-    await fs.promises.writeFile(fileName, JSON.stringify(data));
-    console.log(`${fileName} успешно сохранён.`);
+    await fs.promises.writeFile(path.join(process.cwd(), 'assets', 'output', fileName), JSON.stringify(data));
+    logger.info(`${fileName} успешно сохранён.`);
   } catch (err) {
-    console.error(`Ошибка записи файла ${fileName}:`, err);
+    throw new Error(`Ошибка записи файла ${fileName}: ${err.message}`);
   }
 }
 
-export async function getFsspAndFilterClients(entries, numberOfClients = 10, from = 0) {
+export async function filterClients(clients) {
+  return clients.filter(client => new Client(client['name'], client['birthDate']).isClientValid);
+}
+
+export async function getFsspAndFilterClients(clients, numberOfClients = 10, from = 0) {
   const startTime = performance.now();
   const filteredEntries = [];
   const fsspData = [];
   let requests = [];
   let count = 0;
 
-  console.log('Начало выполнения:', new Date().toLocaleString());
+  logger.info('Начало выполнения');
 
   try {
-    for (const entry of entries?.slice(from, from + numberOfClients)) {
-      if (count >= numberOfClients) break;
-
-      const name = entry['name'];
-      const birthDate = entry['birthDate'];
-      const formattedBirthDate = formatDate(birthDate);
-
-      requests.push(getFssp(name, formattedBirthDate));
-
-      if (requests.length === 5) {
-        const responses = await Promise.all(requests);
-
-        for (const response of responses) {
-          fsspData.push(response.data);
-
-          if (!response.data.result.length) {
-            filteredEntries.push({ ...entry, birthDate: formattedBirthDate });
-          }
-
-          count++;
-          console.log(`Обработано ${count} клиентов`);
-        }
-
-        requests = [];
-      }
-    }
-
-    if (requests.length > 0) {
+    const processRequests = async () => {
       const responses = await Promise.all(requests);
 
       for (const response of responses) {
         fsspData.push(response.data);
 
+        checkFsspError(response);
+
         if (!response.data.result.length) {
-          const entry = entries[from + count];
+          const entry = clients[from + count];
           filteredEntries.push({ ...entry, birthDate: formatDate(entry.birthDate) });
         }
 
         count++;
-        console.log(`Обработано ${count} клиентов`);
+      }
+
+      logger.info(`Обработано ${count} клиентов`);
+
+      requests = [];
+    };
+
+    for (let i = 0; i < clients.slice(from, from + numberOfClients).length; i++) {
+      if (count >= numberOfClients) break;
+
+      const client = new Client(clients[i]['name'], clients[i]['birthDate']);
+
+      requests.push(getFssp({ ...client, dob: formatDate(client.dob) }));
+
+      if (requests.length === 5) {
+        await processRequests();
       }
     }
 
+    if (requests.length > 0) {
+      await processRequests();
+    }
   } catch (e) {
-    console.error(`Ошибка при обработке запроса:`, e.message);
-    await saveDataToFile('client-error.json', fsspData);
+    logger.error(`Ошибка при обработке запроса: ${e.message}`);
   }
 
   await saveDataToFile('fssp-data.json', fsspData);
 
   const endTime = performance.now();
-  const duration = (endTime - startTime) / 1000;
-  console.log(`Обработка завершена - общее время выполнения: ${duration.toFixed(2)} секунд`);
+  logger.info(`Обработка завершена - общее время выполнения: ${((endTime - startTime) / 1000).toFixed(2)} секунд`);
 
-  return filteredEntries;
+  return { count, filteredEntries };
 }
