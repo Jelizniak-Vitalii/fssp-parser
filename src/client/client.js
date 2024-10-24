@@ -9,8 +9,8 @@ export class Client {
   }
 
   setName(name) {
-    this.firstName = name.split(' ')[1];
-    this.lastName = name.split(' ')[0];
-    this.patronymic = name.split(' ')[2];
+    this.firstName = name?.split(' ')[1];
+    this.lastName = name?.split(' ')[0];
+    this.patronymic = name?.split(' ')[2];
   }
 }
