@@ -63,7 +63,7 @@ export async function getFsspAndFilterClients(clients, numberOfClients = 10, fro
       }
     }
 
-    if (requests.length > 0) {
+    if (requests.length) {
       await processRequests();
     }
   } catch (e) {
