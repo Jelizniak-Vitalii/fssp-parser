@@ -22,8 +22,9 @@ export async function filterClients(clients) {
 
 export async function getFsspAndFilterClients(clients, numberOfClients = 10, from = 0) {
   const startTime = performance.now();
-  const filteredEntries = [];
+  const filteredClients = [];
   const fsspData = [];
+  const fsspClients = [];
   let requests = [];
   let count = 0;
 
@@ -34,13 +35,16 @@ export async function getFsspAndFilterClients(clients, numberOfClients = 10, fro
       const responses = await Promise.all(requests);
 
       for (const response of responses) {
+        const entry = clients[from + count];
+
         fsspData.push(response.data);
 
         checkFsspError(response);
 
         if (!response.data.result.length) {
-          const entry = clients[from + count];
-          filteredEntries.push({ ...entry, birthDate: formatDate(entry.birthDate) });
+          filteredClients.push({ ...entry, birthDate: formatDate(entry.birthDate) });
+        } else {
+          fsspClients.push({ ...entry, birthDate: formatDate(entry.birthDate) });
         }
 
         count++;
@@ -75,5 +79,5 @@ export async function getFsspAndFilterClients(clients, numberOfClients = 10, fro
   const endTime = performance.now();
   logger.info(`Обработка завершена - общее время выполнения: ${((endTime - startTime) / 1000).toFixed(2)} секунд`);
 
-  return { count, filteredEntries };
+  return { count, filteredClients, fsspClients };
 }
