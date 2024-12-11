@@ -40,7 +40,7 @@ export async function parseFssp() {
     await saveExcel(clients.slice(filteredClients.count), inputFilePath);
 
     if ((await parseExcel(inputFilePath)).length) {
-      await parseFssp();
+      setTimeout(async () => await parseFssp(), 5000);
     }
   } catch (error) {
     logger.error(error.message);
